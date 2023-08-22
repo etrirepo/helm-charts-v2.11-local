@@ -1,0 +1,170 @@
+# Copyright 2019-present Open Networking Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{- $log_level := tpl .Values.rw_core.log_level . | upper }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ template "fullname" . }}-rw-core"
+  namespace: {{ .Release.Namespace }}
+  {{- if or (hasKey .Values "extra_deployment_labels") (hasKey .Values "rw_core_deployment_labels") }}
+  labels:
+    {{- if hasKey .Values "extra_deployment_labels" }}
+    {{- range $key, $val := .Values.extra_deployment_labels }}
+    {{ $key }}: {{ $val | quote }}
+    {{- end }}
+    {{- end }}
+    {{- if hasKey .Values "rw_core_deployment_labels" }}
+    {{- range $key, $val := .Values.rw_core_deployment_labels }}
+    {{ $key }}: {{ $val | quote }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rw-core
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      namespace: {{ .Release.Namespace }}
+      labels:
+        app: rw-core
+        release: {{ .Release.Name }}
+        app.kubernetes.io/name: "read-write-core"
+        app.kubernetes.io/version: {{ quote .Chart.AppVersion }}
+        app.kubernetes.io/component: "core"
+        app.kubernetes.io/part-of: "voltha"
+        app.kubernetes.io/stack: "{{ .Values.global.stack_name }}"
+        app.kubernetes.io/managed-by: {{ quote .Release.Service }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        {{- if hasKey .Values "extra_pod_labels" }}
+        {{- range $key, $val := .Values.extra_pod_labels }}
+        {{ $key }}: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if hasKey .Values "rw_core_pod_labels" }}
+        {{- range $key, $val := .Values.rw_core_pod_labels }}
+        {{ $key }}: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+    spec:
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      {{- end }}
+      containers:
+        - name: voltha
+          image: '{{ tpl .Values.images.rw_core.registry . }}{{ tpl .Values.images.rw_core.repository . }}:{{ tpl .Values.images.rw_core.tag . }}'
+          imagePullPolicy: {{ tpl .Values.images.rw_core.pullPolicy . }}
+          env:
+            - name: NAMESPACE
+              value: voltha
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: COMPONENT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/name']
+            - name: KV_STORE_DATAPATH_PREFIX
+              value: {{ tpl .Values.rw_core.kv_store_data_prefix . }}
+          args:
+            - "/app/rw_core"
+            - "--kv_store_type=etcd"
+            - "--kv_store_address={{ tpl .Values.services.etcd.address . }}"
+            - "--grpc_nbi_address=0.0.0.0:50057"
+            - "--grpc_sbi_address=0.0.0.0:50058"
+            - "--banner"
+            - "--kafka_cluster_address={{ tpl .Values.services.kafka.cluster.address . }}"
+            - "--rpc_timeout={{ tpl .Values.rw_core.rpc_timeout . }}"
+            - "--flow_timeout={{ tpl .Values.rw_core.flow_timeout . }}"
+            - "--internal_timeout={{ tpl .Values.rw_core.internal_timeout . }}"
+            - "--event_topic={{ .Values.rw_core.topics.event_topic }}"
+            - "--log_level={{ $log_level }}"
+            - "--probe_address=:8080"
+            - "--trace_enabled={{ .Values.global.tracing.enabled }}"
+            - "--trace_agent_address={{ tpl .Values.services.tracing_agent.address . }}"
+            - "--log_correlation_enabled={{ .Values.global.log_correlation.enabled }}"
+            - "--stack_id={{ tpl .Values.rw_core.stack_id . }}"
+            - "--backoff_retry_initial_interval={{ .Values.rw_core.backoff_initial_interval }}"
+            - "--backoff_retry_max_interval={{ .Values.rw_core.backoff_max_interval }}"
+            - "--backoff_retry_max_elapsed_time={{ .Values.rw_core.backoff_max_elapsed_time }}"
+          ports:
+            - containerPort: 50057
+              name: nbi-grpc
+            - containerPort: 50058
+              name: core-grpc
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: {{ .Values.probe.liveness.initial_delay_seconds }}
+            periodSeconds: {{ .Values.probe.liveness.period_seconds }}
+          readinessProbe:
+            httpGet:
+              path: /readz
+              port: 8080
+            initialDelaySeconds: {{ .Values.probe.readiness.initial_delay_seconds }}
+            periodSeconds: {{ .Values.probe.readiness.period_seconds }}
+          resources:
+            requests:
+              {{- if .Values.resources.rw_core.requests.memory }}
+              memory: {{ .Values.resources.rw_core.requests.memory }}
+              {{- end }}
+              {{- if .Values.resources.rw_core.requests.cpu }}
+              cpu: {{ .Values.resources.rw_core.requests.cpu }}
+              {{- end }}
+            limits:
+              {{- if .Values.resources.rw_core.limits.memory }}
+              memory: {{ .Values.resources.rw_core.limits.memory }}
+              {{- end }}
+              {{- if .Values.resources.rw_core.limits.cpu }}
+              cpu: {{ .Values.resources.rw_core.limits.cpu }}
+              {{- end }}
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- if .Values.scheduleRules.preferStackPodsOnSameNode }}
+            - podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/stack
+                      operator: In
+                      values:
+                        - {{ .Values.global.stack_name }}
+              weight: 100
+            {{- end }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- if .Values.scheduleRules.preferStacksOnDifferentNodes }}
+            - podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - read-write-core
+              weight: 100
+            {{- end }}

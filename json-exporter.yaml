@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: json-exporter
+  namespace: voltha
+
+spec:
+  containers:
+  - name: json-exporter
+    image: docker.io/etrirepository/jsonexport:dev
+    imagePullPolicy: Always
+
+    ports:
+    - containerPort: 7979
+      name: port
+
+    volumeMounts:
+    - name: pmdata
+      mountPath: /data/
+
+  volumes:
+  - name: pmdata
+    hostPath:
+      path: '/etc/tmp/json-exporter'
+      type: DirectoryOrCreate
+
+
+  imagePullSecrets:
+  - name: regcred

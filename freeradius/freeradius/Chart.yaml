@@ -1,0 +1,15 @@
+apiVersion: v1
+appVersion: 3.0.21
+description: A Helm chart to deploy an example RADIUS server
+home: https://www.opennetworking.org/voltha
+icon: https://guide.opencord.org/logos/voltha.svg
+keywords:
+- onf
+- radius
+- voltha
+maintainers:
+- email: info@opennetworking.org
+  name: Open Networking Foundation
+  url: https://www.opennetworking.org
+name: freeradius
+version: 1.0.2

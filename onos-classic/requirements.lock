@@ -1,0 +1,6 @@
+dependencies:
+- name: atomix
+  repository: file://../atomix/atomix
+  version: 0.1.9
+digest: sha256:3af9e46c3933239b21f4763d4969bdfe131629e87d642143b4bf35cceeb0509c
+generated: "2023-08-22T13:28:24.787480102+09:00"

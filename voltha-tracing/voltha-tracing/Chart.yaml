@@ -1,0 +1,20 @@
+apiVersion: v1
+appVersion: "1.18"
+description: A Helm chart for deploying Jaeger all-in-one container for Trace data
+  collection and analysis
+home: https://www.opennetworking.org/voltha
+icon: https://guide.opencord.org/logos/cord.svg
+keywords:
+- onf
+- voltha
+- tracing
+- opentracing
+maintainers:
+- email: info@opennetworking.org
+  name: Open Networking Foundation
+  url: https://www.opennetworking.org
+name: voltha-tracing
+sources:
+- https://github.com/jaegertracing/jaeger-kubernetes/tree/master/all-in-one
+- https://www.jaegertracing.io/docs/1.18/getting-started/#all-in-one
+version: 1.0.0

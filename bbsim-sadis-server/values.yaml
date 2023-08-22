@@ -1,0 +1,35 @@
+# Copyright 2020-present Open Networking Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+# Default overrides
+global:
+  log_level: "WARN"
+  log_format: "json"
+  image_registry: ""
+  image_tag: ~
+  image_org: "voltha/"
+  image_pullPolicy: "Always"
+
+replicas: 1
+
+bbsim_sadis_port: 50074
+
+serviceAccountName: bbsim-sadis-server
+
+images:
+  bbsim_sadis_server:
+    registry: '192.168.0.140:5000/'
+    repository: 'bbsim-sadis-server'
+    tag: 'v2.11'
+    pullPolicy: '{{ .Values.global.image_pullPolicy | default "Always" }}'

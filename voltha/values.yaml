@@ -1,0 +1,159 @@
+# Copyright 2019-present Open Networking Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+nameOverride: ~
+fullNameOverride: ~
+fullHostnameOverride: ~
+
+# Default Values
+# The following are the default values used for every container in the
+# template.
+global:
+  stack_name: voltha
+  log_level: "WARN"
+  image_registry: '192.168.0.140:5000'
+  image_org: "/"
+  image_tag: ~
+  image_pullPolicy: "Always"
+  rw_core:
+    rpc_timeout: "30s"
+    flow_timeout: "30s"
+    internal_timeout: "30s"
+  # Configure Log Correlation
+  log_correlation:
+    enabled: true
+  # Configure Tracing
+  tracing:
+    enabled: true
+
+# Probe values
+probe:
+  liveness:
+    initial_delay_seconds: 3
+    period_seconds: 3
+  readiness:
+    initial_delay_seconds: 3
+    period_seconds: 3
+
+# Default security context under which the containers run
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
+  runAsGroup: 1001
+
+# Define connectivity to services on which VOLTHA depends
+services:
+  kafka:
+    cluster:
+      address: kafka:9092
+
+  # Define connectivity to etcd
+  etcd:
+    address: etcd:2379
+
+  # Define Tracing Agent connection details
+  tracing_agent:
+    address: jaeger-agent:6831
+
+  # Define the list of controllers to connect to
+  # NOTE this is needed only in case you need to connect to an external ONOS,
+  # if you want to connect to an ONOS installed via voltha-infra please refer to the onos_classic field in this config
+  controller: []
+  #   - address: onos-openflow:6653
+
+# Expose the golang pprof webserver, if enabled
+profiler:
+  enabled: false
+
+# Define the replica count for everything
+replicas:
+  # For R/W cores the templates translate the number of replicas
+  # into the number of RW core pairs with two pods per pair
+  rw_core: 1
+
+  # For everything else replicas are replicas
+  ofagent: 1
+
+rw_core:
+  log_level: '{{ .Values.global.log_level }}'
+  rpc_timeout: '{{ .Values.global.rw_core.rpc_timeout }}'
+  flow_timeout: '{{ .Values.global.rw_core.flow_timeout }}'
+  internal_timeout: '{{ .Values.global.rw_core.internal_timeout }}'
+  kv_store_data_prefix: 'service/{{ .Values.global.stack_name }}_voltha'
+  stack_id: "{{ .Values.global.stack_name }}"
+  topics:
+    event_topic: "voltha.events"
+  backoff_initial_interval: 500ms
+  backoff_max_interval: 5s
+  backoff_max_elapsed_time: 0s
+
+ofagent:
+  log_level: '{{ .Values.global.log_level }}'
+  device_refresh_interval: '15s'
+
+# Define Docker images to be used
+images:
+  ofagent:
+    registry: '{{ .Values.global.image_registry }}'
+    repository: '{{ .Values.global.image_org }}voltha-ofagent-go'
+    tag: 'v2.11'
+    pullPolicy: '{{ .Values.global.image_pullPolicy }}'
+
+  rw_core:
+    registry: '{{ .Values.global.image_registry }}'
+    repository: '{{ .Values.global.image_org }}voltha-rw-core'
+    tag: '{{- if hasKey .Values.global "image_tag" }}{{- if .Values.global.image_tag }}{{ .Values.global.image_tag }}{{- else }}3.1.5{{- end }}{{- else }}3.1.5{{- end }}'
+    pullPolicy: '{{ .Values.global.image_pullPolicy }}'
+
+ingress:
+  enabled: false
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    nginx.ingress.kubernetes.io/grpc-backend: "true"
+  enableVirtualHosts: false
+  baseHostname: local
+  hosts:
+    - host:
+      paths:
+        - "/voltha.VolthaService/"
+  tls: []
+
+# ofAgent needs to connect to multiple instances of ONOS.
+onos_classic:
+  onosOfPort: 6653
+  replicas: 1
+
+resources:
+  rw_core:
+    requests:
+      cpu: 500m
+      memory: 100Mi
+    limits:
+      cpu: ~
+      memory: ~
+  ofagent:
+    requests:
+      cpu: 300m
+      memory: 50Mi
+    limits:
+      cpu: ~
+      memory: ~
+
+# Define scheduling rules for stack pods
+scheduleRules:
+  preferStackPodsOnSameNode: false
+  preferStacksOnDifferentNodes: false

@@ -1,0 +1,12 @@
+dependencies:
+- name: voltha
+  repository: file://../voltha
+  version: 2.11.3
+- name: voltha-adapter-openonu
+  repository: file://../voltha-adapter-openonu
+  version: 2.10.3
+- name: voltha-adapter-openolt
+  repository: file://../voltha-adapter-openolt
+  version: 2.11.3
+digest: sha256:7449cad3b2233d17fc6c6b57b8c2593b8242a624bf97ac2a60a84f06eec47346
+generated: "2023-08-22T17:00:49.289149849+09:00"

@@ -1,0 +1,181 @@
+# Copyright 2019-present Open Networking Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{- $log_level := tpl .Values.adapter_hfr_olt.log_level . | upper }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ template "fullname" . }}"
+  namespace: {{ .Release.Namespace }}
+  {{- if or (hasKey .Values "extra_deployment_labels") (hasKey .Values "hfrolt_deployment_labels") }}
+  labels:
+    {{- if hasKey .Values "extra_deployment_labels" }}
+    {{- range $key, $val := .Values.extra_deployment_labels }}
+    {{ $key }}: {{ $val | quote }}
+    {{- end }}
+    {{- end }}
+    {{- if hasKey .Values "openolt_deployment_labels" }}
+    {{- range $key, $val := .Values.hfrolt_deployment_labels }}
+    {{ $key }}: {{ $val | quote }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: adapter-hfr-olt
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      namespace: {{ .Release.Namespace }}
+      labels:
+        app: adapter-hfr-olt
+        release: {{ .Release.Name }}
+        app.kubernetes.io/name: "adapter-hfr-olt"
+        app.kubernetes.io/version: {{ quote .Chart.AppVersion }}
+        app.kubernetes.io/component: "adapter"
+        app.kubernetes.io/part-of: "voltha"
+        app.kubernetes.io/stack: "{{ .Values.global.stack_name }}"
+        app.kubernetes.io/managed-by: {{ quote .Release.Service }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        {{- if hasKey .Values "extra_pod_labels" }}
+        {{- range $key, $val := .Values.extra_pod_labels }}
+        {{ $key }}: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if hasKey .Values "hfrolt_pod_labels" }}
+        {{- range $key, $val := .Values.hfrolt_pod_labels }}
+        {{ $key }}: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+    spec:
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      {{- end }}
+      affinity:
+        {{- if .Values.nodeAffinityConfig.enabled }}
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "{{ .Values.nodeAffinityConfig.node_label_key }}"
+                operator: In
+                values:
+                - "{{ .Values.nodeAffinityConfig.node_label_value }}"
+        {{- end }}
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- if .Values.scheduleRules.preferStackPodsOnSameNode }}
+            - podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/stack
+                      operator: In
+                      values:
+                        - {{ .Values.global.stack_name }}
+              weight: 100
+            {{- end }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- if .Values.scheduleRules.preferStacksOnDifferentNodes }}
+            - podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - adapter-hfr-olt
+              weight: 100
+            {{- end }}
+      containers:
+        - name: adapter-hfr-olt
+          image: '{{ tpl .Values.images.adapter_hfr_olt.registry . }}{{ tpl .Values.images.adapter_hfr_olt.repository . }}:{{ tpl ( tpl .Values.images.adapter_hfr_olt.tag . ) . }}'
+          imagePullPolicy: {{ tpl .Values.images.adapter_hfr_olt.pullPolicy . }}
+          env:
+            - name: COMPONENT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/name']
+            - name: KV_STORE_DATAPATH_PREFIX
+              value: {{ tpl .Values.adapter_hfr_olt.kv_store_data_prefix . }}
+          args:
+            - "/app/hfrolt"
+            - "--core_endpoint={{ tpl .Values.global.core_endpoint . }}"
+            - "--adapter_endpoint={{ tpl .Values.adapter_hfr_olt.endpoints.address . }}.{{ .Release.Namespace }}.svc:{{ print .Values.adapter_hfr_olt.endpoints.port }}"
+            - "--kafka_cluster_address={{ tpl .Values.services.kafka.cluster.address . }}"
+            - "--event_topic={{ .Values.adapter_hfr_olt.topics.event_topic }}"
+            - "--kv_store_address={{ tpl .Values.services.etcd.address . }}"
+            - "--kv_store_request_timeout={{ tpl .Values.adapter_hfr_olt.kv_store_timeout . }}"
+            - "--heartbeat_check_interval={{ tpl .Values.adapter_hfr_olt.heartbeat_check_interval . }}"
+            - "--heartbeat_fail_interval={{ tpl .Values.adapter_hfr_olt.heartbeat_fail_interval . }}"
+            - "--rpc_timeout={{ tpl .Values.adapter_hfr_olt.rpc_timeout . }}"
+            - "--log_level={{ $log_level }}"
+            - "--current_replica={{ .Values.replicas.current_replica }}"
+            - "--total_replica={{ .Values.replicas.total_replica }}"
+            - "--probe_address=:8080"
+            - "--trace_enabled={{ .Values.global.tracing.enabled }}"
+            - "--trace_agent_address={{ tpl .Values.services.tracing_agent.address . }}"
+            - "--log_correlation_enabled={{ .Values.global.log_correlation.enabled }}"
+            - "--omcc_encryption={{ .Values.global.omcc_encryption }}"
+            - "--enable_onu_stats={{ .Values.global.enable_onu_stats }}"
+            - "--enable_gem_stats={{ .Values.global.enable_gem_stats }}"
+            - "--check_onu_exist_on_discovery={{ tpl .Values.adapter_hfr_olt.check_onu_exist_on_discovery . }}"
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.adapter_hfr_olt.endpoints.port }}
+              name: grpc
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: {{ .Values.probe.liveness.initial_delay_seconds }}
+            periodSeconds: {{ .Values.probe.liveness.period_seconds }}
+          readinessProbe:
+            httpGet:
+              path: /readz
+              port: 8080
+            initialDelaySeconds: {{ .Values.probe.readiness.initial_delay_seconds }}
+            periodSeconds: {{ .Values.probe.readiness.period_seconds }}
+          resources:
+            requests:
+              {{- if .Values.resources.requests.memory }}
+              memory: {{ .Values.resources.requests.memory }}
+              {{- end }}
+              {{- if .Values.resources.requests.cpu }}
+              cpu: {{ .Values.resources.requests.cpu }}
+              {{- end }}
+            limits:
+              {{- if .Values.resources.limits.memory }}
+              memory: {{ .Values.resources.limits.memory }}
+              {{- end }}
+              {{- if .Values.resources.limits.cpu }}
+              cpu: {{ .Values.resources.limits.cpu }}
+              {{- end }}
+          volumeMounts:
+             - name: pmdata
+               mountPath: /data/
+
+      volumes:
+        - name : pmdata
+          hostPath:
+            path: '/etc/tmp/json-exporter'
+            type: DirectoryOrCreate

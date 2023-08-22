@@ -1,0 +1,21 @@
+dependencies:
+- name: onos-classic
+  repository: file://../onos-classic
+  version: 0.1.29
+- name: bbsim-sadis-server
+  repository: file://../bbsim-sadis-server
+  version: 0.3.1
+- name: etcd
+  repository: file://../etcd/etcd
+  version: 8.5.11
+- name: kafka
+  repository: file://../kafka/kafka
+  version: 20.0.2
+- name: freeradius
+  repository: file://../freeradius/freeradius
+  version: 1.0.2
+- name: voltha-tracing
+  repository: file://../voltha-tracing/voltha-tracing
+  version: 1.0.0
+digest: sha256:24d45b3c853367aafe035086b7d46da83fc19d5bee72e92dbccb6a2d1cf75a9e
+generated: "2023-08-22T13:29:14.172473523+09:00"

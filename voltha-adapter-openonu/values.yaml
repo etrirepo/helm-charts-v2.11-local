@@ -1,0 +1,155 @@
+# Copyright 2019-present Open Networking Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+
+nameOverride: ~
+fullNameOverride: ~
+
+# Default overrides
+global:
+  voltha_release_name: voltha
+  stack_name: voltha
+  log_level: "WARN"
+  image_registry: "192.168.0.140:5000"
+  image_tag: ~
+  image_org: "voltha/"
+  image_pullPolicy: "Always"
+  core_endpoint: "{{ .Values.global.voltha_release_name }}-{{ .Values.global.stack_name }}-core.{{ .Release.Namespace }}.svc:55558"
+  incremental_evto_update: False
+  # timeout for deadline for interadapter communication
+  # should be in format as expected by parseDuration golang.
+  max_timeout_interadapter_comm: "30s"
+  # timeout for ONU reconciling
+  max_timeout_reconciling: "10s"
+  # timeout for OMCI channel
+  omci_timeout: "3s"
+  # timeout for RPC request
+  rpc_timeout: "10s"
+  # kv store timeout
+  adapter_open_onu:
+    timeout: "5s"
+  # Configure Log Correlation
+  log_correlation:
+    enabled: true
+  # Configure Tracing
+  tracing:
+    enabled: true
+  # Configure Performance Metrics
+  metrics:
+    enabled: true
+  # Configure Extended OMCI Support
+  extended_omci_support:
+    enabled: false
+  # Configure Mib Audit
+  mib_audit:
+  # configure "0s" to disable Mib Audit
+    interval: 0s
+  alarm_audit:
+  # configure "0s" to disable omci alarm audit
+    interval: 300s
+
+# Probe values
+probe:
+  liveness:
+    initial_delay_seconds: 3
+    period_seconds: 3
+  readiness:
+    initial_delay_seconds: 3
+    period_seconds: 3
+
+# Default security context under which the containers run
+securityContext:
+  enabled: true
+  fsGroup: 0
+  runAsUser: 0
+  runAsGroup: 0
+
+# Define connectivity to required services
+services:
+  kafka:
+    cluster:
+      address: kafka:9092
+
+  # Define connectivity to etcd
+  etcd:
+    address: etcd:2379
+
+  # Define Tracing Agent connection details
+  tracing_agent:
+    address: jaeger-agent:6831
+
+allowed_onu_vendors:
+  - OPEN
+  - ALCL
+  - BRCM
+  - TWSH
+  - ALPH
+  - ISKT
+  - SFAA
+  - BBSM
+  - SCOM
+  - ARPX
+  - DACM
+  - ERSN
+  - HWTC
+  - CIGG
+  - ADTN
+  - ARCA
+  - AVMG
+  - ZYWN
+
+# Expose the golang pprof webserver, if enabled
+profiler:
+  enabled: false
+
+# Define the recplica count for everything
+replicas:
+  adapter_open_onu: 1
+
+adapter_open_onu:
+  log_level: '{{ .Values.global.log_level }}'
+  incremental_evto_update: '{{ .Values.global.incremental_evto_update }}'
+  max_timeout_interadapter_comm: '{{ .Values.global.max_timeout_interadapter_comm }}'
+  max_timeout_reconciling: '{{ .Values.global.max_timeout_reconciling }}'
+  omci_timeout: '{{ .Values.global.omci_timeout }}'
+  rpc_timeout: '{{ .Values.global.rpc_timeout }}'
+  kv_store_timeout: '{{ .Values.global.adapter_open_onu.timeout }}'
+  kv_store_data_prefix: 'service/{{ .Values.global.stack_name }}_voltha'
+  alarm_audit_interval: '{{ .Values.global.alarm_audit.interval }}'
+  uni_port_mask: "0x0001"
+  endpoints:
+    address: '{{ template "fullname" . }}-api'
+    port: 50060
+  topics:
+    event_topic: "voltha.events"
+
+images:
+  adapter_open_onu_go:
+    registry: '{{ .Values.global.image_registry }}'
+    repository: '{{ .Values.global.image_org }}voltha-openonu-adapter-go'
+    tag: '{{- if hasKey .Values.global "image_tag" }}{{- if .Values.global.image_tag }}{{ .Values.global.image_tag }}{{- else }}{{ .Chart.AppVersion }}{{- end }}{{- else }}{{ .Chart.AppVersion }}{{- end }}'
+    pullPolicy: '{{ .Values.global.image_pullPolicy }}'
+
+resources:
+  requests:
+    cpu: 0.5
+    memory: 512Mi
+  limits:
+    cpu: ~
+    memory: ~
+
+# Define scheduling rules for stack pods
+scheduleRules:
+  preferStackPodsOnSameNode: false
+  preferStacksOnDifferentNodes: false
