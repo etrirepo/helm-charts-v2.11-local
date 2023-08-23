@@ -17,7 +17,7 @@
 # Default overrides
 global:
   log_level: "DEBUG"
-  image_registry: ""
+  image_registry: "192.168.0.140:5000"
   image_tag: ~
   image_org: "voltha/"
   image_pullPolicy: "Always"

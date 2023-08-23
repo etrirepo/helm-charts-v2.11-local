@@ -1,0 +1,34 @@
+#helm upgrade --install --create-namespace -n infra voltha-infra onf/voltha-infra --version 2.9.13 --set onos-classic.image.tag=5.1.1
+#helm upgrade --install --create-namespace   -n voltha voltha onf/voltha-stack --version 2.9.17 --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=scriptOmci  --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=v2.9 --set global.log_level=DEBUG  --set voltha-adapter-openonu.images.adapter_open_onu_go.repository=etrirepository/voltha-openonu-adapter-go --set voltha-adapter-openonu.images.adapter_open_onu_go.tag=uniport_2
+#helm upgrade --install --create-namespace -n infra voltha-infra onf/voltha-infra --version 2.10.10 -f onos-file.yaml --set voltha-tracing.enabled=true --set efk.enabled=true
+
+helm upgrade --install --create-namespace -n infra voltha-infra helm-charts-v2.11-local/voltha-infra --version 2.10.10 -f onos-file.yaml --set voltha-tracing.enabled=true --set efk.enabled=true
+
+#helm upgrade --install --create-namespace -n voltha voltha onf/voltha-stack --version 2.9.17 --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=enable20221115  --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=onosslice --set global.log_level=DEBUG -f openonu-values.yaml
+
+#helm upgrade --install --create-namespace -n voltha voltha onf/voltha-stack --version 2.9.17 --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=noskip  --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=onosStream --set global.log_level=DEBUG -f openonu-values.yaml
+
+
+#####################################ORIGINAL################################################
+#helm upgrade --install --create-namespace -n voltha voltha onf/voltha-stack --version 2.9.17 --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=noskip  --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=sliceApp --set global.log_level=DEBUG -f openonu-values.yaml
+#############################################################################################
+
+####DEBUGTEST####
+#helm upgrade --install --create-namespace -n voltha voltha version2.11/helm-charts-v2.11/delta-stack --version 2.10.10  --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=jsonExporter --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=sliceApp --set global.log_level=DEBUG -f openonu-values.yaml
+
+#helm upgrade --install --create-namespace -n voltha voltha helm-charts-v2.11/etri-stack --version 2.10.10  --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=v2.11.stat --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=v2.11 --set global.log_level=DEBUG -f openonu-values.yaml
+helm upgrade --install --create-namespace -n voltha voltha helm-charts-v2.11-local/voltha-stack --version 2.10.10  --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=v2.11 --set voltha.images.rw_core.repository=/voltha-rw-core --set voltha.images.rw_core.tag=v2.11 --set global.log_level=DEBUG -f openonu-values.yaml
+
+####Add HFR Adapter ###
+#helm upgrade --install --create-namespace -n voltha voltha helm-charts-v2.11/etri-stack --version 2.10.10  --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=v2.11.stat --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=test --set global.log_level=DEBUG -f openonu-values.yaml --set voltha-adapter-hfrolt.images.adapter_hfr_olt.repository=etrirepository/voltha-hfrolt-adapter --set voltha-adapter-hfrolt.images.adapter_hfr_olt.tag=v2.11
+
+####AllocIDTest####
+#helm upgrade --install --create-namespace -n voltha voltha version2.11/helm-charts-v2.11/delta-stack --version 2.10.10  --set global.stack_name=voltha   --set global.voltha_infra_name=voltha-infra --set global.voltha_infra_namespace=infra --set voltha-adapter-openolt.images.adapter_open_olt.repository=etrirepository/voltha-openolt-adapter --set voltha-adapter-openolt.images.adapter_open_olt.tag=allocId --set voltha.images.rw_core.repository=etrirepository/voltha-rw-core --set voltha.images.rw_core.tag=v2.11 --set global.log_level=DEBUG -f openonu-values.yaml
+
+
+kubectl apply -f json-exporter.yaml
+
+helm install --create-namespace -n monitoring prometheus Monitoring/Prometheus
+
+helm install --create-namespace -n monitoring grafana Monitoring/Grafana
+

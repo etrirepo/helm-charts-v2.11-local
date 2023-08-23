@@ -1,0 +1,33 @@
+#kubectl cp -n infra 1QueueStrict.json voltha-infra-etcd-0:/tmp/tp.json
+kubectl cp -n infra 4QueueHybridProfileMap1.json voltha-infra-etcd-0:/tmp/tp.json
+
+#kubectl cp -n infra ETRITP.json voltha-infra-etcd-0:/tmp/tp.json
+
+kubectl exec -n infra -it voltha-infra-etcd-0 -- /bin/sh -c 'cat /tmp/tp.json| ETCDCTL_API=3 etcdctl put service/voltha/technology_profiles/ETRI-PON/64'
+#kubectl exec -n infra -it voltha-infra-etcd-0 -- /bin/sh -c 'cat /tmp/tp.json| ETCDCTL_API=3 etcdctl put service/voltha/technology_profiles/XGS-PON/64'
+
+
+#helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0 --set images.bbsim.repository=etrirepository/bbsim --set images.bbsim.tag=serial --version 4.5.2 --set onu=1
+#helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0 --set images.bbsim.repository=etrirepository/bbsim --set images.bbsim.tag=pPon --version 4.5.2 --set onu=1
+
+#helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0 --set images.bbsim.repository=etrirepository/bbsim --set images.bbsim.tag=noPkt --version 4.5.2 --set onu=1
+
+#helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0 --set images.bbsim.repository=etrirepository/bbsim --set images.bbsim.tag=dhcp --version 4.5.2 --set onu=1
+
+helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0 --set images.bbsim.repository=/bbsim --set images.bbsim.tag=v2.11 --set onu=2
+
+#helm upgrade --install -n voltha bbsim0 version2.11/helm-charts-v2.11/bbsim --set olt_id=0 --set images.bbsim.repository=etrirepository/bbsim --set images.bbsim.tag=intf --set onu=2
+#helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0 --set onu=1
+
+#helm upgrade --install -n voltha bbsim1 onf/bbsim --set olt_id=1
+
+#helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0
+#helm upgrade --install -n voltha bbsim0 onf/bbsim --set olt_id=0  --version 4.5.2 --set onu=1
+
+curl -sSL --user karaf:karaf -X POST -H Content-Type:application/json http://127.0.0.1:8181/onos/v1/network/configuration --data @sadis_etri.json
+
+#curl -sSL --user karaf:karaf -X POST -H Content-Type:application/json http://127.0.0.1:8181/onos/v1/network/configuration --data @sis_uniport.json
+
+
+#voltctl device create -t openolt -H bbsim0.voltha.svc:50060
+

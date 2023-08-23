@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.name }}
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  serviceName : {{ .Values.serviceName }}
+
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/prometheus-configmap-1.0.0.yaml") . | sha256sum }}
+
+    spec:
+      containers:
+      - image: {{ .Values.image }}
+        name: {{ .Values.name }}
+        ports:
+        {{ range $key, $value := .Values.service.ports }}
+        - containerPort: {{ $value.containerPort }}
+        {{ end }}
+
+        env:
+        {{ if .Values.global.timezone }}
+        - name : TZ
+          value: {{ .Values.global.timezone }}
+        {{ end }}
+
+        volumeMounts:
+        - name: {{ .Values.name }}-volume
+          mountPath: {{ .Values.volumeMountPath }}
+        - name: config
+          mountPath: /etc/prometheus/
+
+        command: ["/bin/prometheus"]
+        args: ["--config.file=/etc/prometheus/prometheus.yml","--storage.tsdb.retention.time=180d","--storage.tsdb.retention.size=100GB","--storage.tsdb.path=/prometheus","--web.console.libraries=/usr/share/prometheus/console_libraries","--web.console.templates=/usr/share/prometheus/consoles"]
+
+      initContainers:
+      - name: prometheus-data-permission-fix
+        image: 192.168.0.140:5000/busybox:v2.11
+        command: ["/bin/chmod","-R","777", "/data"]
+        volumeMounts:
+        - name: {{ .Values.name }}-volume
+          mountPath: /data
+        env:
+        {{ if .Values.global.timezone }}
+        - name : TZ
+          value: {{ .Values.global.timezone }}
+        {{ end }}
+        imagePullPolicy: IfNotPresent
+
+      volumes:
+      - name: {{ .Values.name }}-volume
+        {{ if eq .Values.volumeType "hostPath" }}
+        hostPath:
+          path: {{ .Values.hostPath.hostPathDir }}
+          type: {{ .Values.hostPath.hostPathType }}
+        {{ else if eq .Values.volumeType "pvc" }}
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-{{ .Values.name }}
+        {{ end }}
+
+
+      - name: config
+        configMap:
+          name: {{ .Release.Name }}-{{ .Values.name }}
+
+      imagePullSecrets:
+      - name: regcred
+
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/master
+                  operator: Exists

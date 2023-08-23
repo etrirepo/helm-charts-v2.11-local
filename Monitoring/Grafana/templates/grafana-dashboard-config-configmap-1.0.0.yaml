@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-dashboard-config
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+data:
+  hfr-dashboard.yaml: |-
+    apiVersion: 1
+
+    providers:
+     - name: 'default'
+       orgId: 1
+       folder: ''
+       folderUid: ''
+       type: file
+       options:
+         path: /etc/grafana/provisioning/dashboards/General

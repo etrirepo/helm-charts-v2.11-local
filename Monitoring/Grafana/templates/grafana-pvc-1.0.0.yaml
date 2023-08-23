@@ -1,0 +1,20 @@
+{{ if eq .Values.volumeType "pvc" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-grafana
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+spec:
+  storageClassName: {{ .Values.pvc.storageClassName }}
+  accessModes:
+  - {{ .Values.pvc.accessModes }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.storageSize }}
+{{ end }}

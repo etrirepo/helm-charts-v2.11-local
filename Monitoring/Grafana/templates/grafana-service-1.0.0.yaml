@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+spec:
+  ports:
+  {{ range $key, $value := .Values.service.ports }}
+  - port: {{ $value.port }}
+    targetPort : {{ $value.containerPort }}
+  {{ end }}
+
+  selector:
+    app: {{ .Values.name }}
+
+  {{ if eq .Values.service.serviceType "loadBalancer" }}
+  type: LoadBalancer
+  {{ else if eq .Values.service.serviceType "ClusterIP" }}
+  type: ClusterIP
+  {{ else if eq .Values.service.serviceType "externalIP" }}
+  type: ClusterIP
+  externalIPs:
+  - {{ .Values.service.externalIP.ipAddress }}
+  {{ end }}

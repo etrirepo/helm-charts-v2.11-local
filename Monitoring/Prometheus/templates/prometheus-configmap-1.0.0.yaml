@@ -1,0 +1,88 @@
+apiVersion : v1
+kind : ConfigMap
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.name }}
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+data:
+
+    prometheus.rules: |-
+      groups:
+        - name: custom_rules
+          rules:
+          - record: kube_alive_pods
+            expr: kube_pod_status_phase{pod!="",phase="Running"} == 1
+          - record: kube_pending_pods
+            expr: kube_pod_status_phase{pod!="",phase="Pending"} == 1
+          - record: kube_failed_pods
+            expr: kube_pod_status_phase{pod!="",phase="Failed"} == 1
+          - record: kube_evicted_pods
+            expr: kube_pod_status_reason{reason="Evicted"} == 1
+
+    prometheus.yml: |-
+      global:
+        scrape_interval:     {{ .Values.config.scrapeInterval }}
+        evaluation_interval: {{ .Values.config.evaluationInterval }}
+      rule_files:
+        - /etc/prometheus/prometheus.rules
+      scrape_configs:
+      {{ range $key, $value := .Values.config.serviceDiscovery }}
+      - job_name: '{{ $key }}'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        {{ range $keySub, $valueSub := $value }}
+        - source_labels: {{ $valueSub.source_labels }}
+          {{ if $valueSub.action }}
+          action: {{ $valueSub.action }}
+          {{ else }}
+          action: keep
+          {{ end }}
+          
+          {{ if $valueSub.regex }}   
+          regex: '{{ $valueSub.regex }}'
+          {{ end }}
+
+          {{ if $valueSub.target_label }}
+          target_label: {{ $valueSub.target_label }}
+          {{ end }}
+        {{ end }}
+      {{ end }}
+      {{ range $key, $value := .Values.config.staticExporter }}
+      {{ if eq $key "cuduExporter" }}
+      - job_name: '{{ $key }}'
+        static_configs:
+        - targets: ['{{ $value.target }}']
+          labels:
+              instance: cudu
+      {{else}}
+      - job_name: '{{ $key }}'
+        static_configs:
+        - targets: ['{{ $value.target }}']
+      {{ end }}
+      {{ end }}
+      - job_name: 'kubernetes-cadvisor'
+
+        scheme: https
+
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        kubernetes_sd_configs:
+        - role: node
+
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor

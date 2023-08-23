@@ -1,0 +1,12 @@
+global:
+  monitoring:
+    namespace: default
+
+name: node-exporter
+namespace: monitoring
+image: prom/node-exporter
+
+service:
+  ports:
+    metrics:
+      containerPort: 9100

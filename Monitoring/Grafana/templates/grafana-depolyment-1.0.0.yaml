@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-grafana
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+        {{ if .Values.version }}
+        version: {{ .Values.version }}
+        {{ end }}
+
+    spec:
+      containers:
+      {{ if .Values.version }}
+      - image: {{ .Values.image }}:{{ .Values.version }}
+      {{ else }}
+      - image: {{ .Values.image }}
+      {{ end }}
+        imagePullPolicy: IfNotPresent
+        name: {{ .Values.name }}
+        ports:
+        {{ range $key, $value := .Values.service.ports }}
+        - containerPort: {{ $value.containerPort }}
+        {{ end }}
+        imagePullPolicy: IfNotPresent
+
+        volumeMounts:
+        - name: {{ .Release.Name }}-{{ .Values.name }}-volume
+          mountPath: {{ .Values.volumeMountPath }}
+
+
+        - mountPath: /etc/localtime
+          name: localtime
+
+        env:
+        {{ range $key, $value := .Values.env }}
+        - name : {{ $value.name }}
+          value : {{ $value.value }}
+        {{ end }}
+        {{ if .Values.global.timezone }}
+        - name : TZ
+          value: {{ .Values.global.timezone }}
+        {{ end }}
+
+      initContainers:
+      - name: grafana-data-permission-fix
+        image: 192.168.0.140:5000/busybox:v2.11
+        command: ["/bin/chmod","-R","777", "/data"]
+        volumeMounts:
+        - name: {{ .Release.Name }}-{{ .Values.name }}-volume
+          mountPath: /data
+        - mountPath: /etc/localtime
+          name: localtime
+        imagePullPolicy: IfNotPresent
+
+        {{ if .Values.global.timezone }}
+        env:
+        - name : TZ
+          value: {{ .Values.global.timezone }}
+        {{ end }}
+
+      volumes:
+      - name: {{ .Release.Name }}-{{ .Values.name }}-volume
+        {{ if eq .Values.volumeType "hostPath" }}
+        hostPath:
+          path: {{ .Values.hostPath.hostPathDir }}
+          type: {{ .Values.hostPath.hostPathType }}
+        {{ else if eq .Values.volumeType "pvc" }}
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-{{ .Values.name }}
+        {{ end }}
+      - name: grafana-datasources-config
+        configMap:
+          defaultMode: 420
+          name: {{ .Release.Name }}-grafana-datasources
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+          type: File
+      imagePullSecrets:
+      - name: regcred
+
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/master
+                  operator: Exists

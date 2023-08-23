@@ -1,0 +1,74 @@
+# grafana-datasource-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-datasources
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+data:
+  prometheus.yaml: |-
+    {
+        "apiVersion": 1,
+        "datasources": [
+            {
+               "access":"proxy",
+               "editable": true,
+               "name": "prometheus",
+               "orgId": 1,
+               "type": "prometheus",
+               "url": "http://prometheus.monitoring.svc.cluster.local:19090",
+               "version": 1,
+               "isDefault": true
+            }
+        ]
+    }
+  elasticsearch.yaml: |-
+    {
+        "apiVersion": 1,
+        "datasources": [
+            {
+               "access":"proxy",
+               "editable": true,
+               "name": "Elasticsearch",
+               "orgId": 1,
+               "type": "elasticsearch",
+               "url": "http://elasticsearch.monitoring.svc.cluster.local:9200",
+               "basicAuth": true,
+               "basicAuthUser": "elastic",
+               "jsonData": {
+                  "interval":"Daily",
+                  "timeField":"@timestamp"
+               },
+               "secureJsonData": {
+                  "basicAuthPassword": "hfr123"
+               }
+            }
+        ]
+    }
+  redis.yaml: |-
+    {
+        "apiVersion": 1,
+        "datasources": [
+            {
+               "access":"proxy",
+               "editable": true,
+               "name": "Redis",
+               "orgId": 1,
+               "version": 1,
+               "type": "redis-datasource",
+               "url": "redis6-redis-cluster.ntels-pcf-redis6.svc.cluster.local:6379",
+               "jsonData": {
+                  "client": "cluster",
+                  "poolSize": 5,
+                  "timeout": 10,
+                  "pingInterval": 0,
+                  "pipelineWindow": 0
+               }
+            }
+        ]
+    }

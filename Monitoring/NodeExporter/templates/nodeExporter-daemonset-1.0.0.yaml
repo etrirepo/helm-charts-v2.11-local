@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.name }}
+
+  {{ if ne .Values.global.monitoring.namespace "default" }}
+  namespace: {{ .Values.global.monitoring.namespace }}
+  {{ else }}
+  namespace: {{ .Values.namespace }}
+  {{ end }}
+
+spec:
+  selector:
+    matchLabels:
+      k8s-app: {{ .Values.name }}
+
+  template:
+    metadata:
+      labels:
+        k8s-app: {{ .Values.name }}
+
+    spec:
+      containers:
+      - name: {{ .Values.name }}
+        image: {{ .Values.image }}
+        ports:
+        {{ range $key, $value := .Values.service.ports }}
+        - containerPort: {{ $value.containerPort }}
+        {{ end }}
+        env:
+        {{ if .Values.global.timezone }}
+        - name : TZ
+          value: {{ .Values.global.timezone }}
+        {{ end }}
+        imagePullPolicy: IfNotPresent
+        
+      imagePullSecrets:
+      - name: regcred
+
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"

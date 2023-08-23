@@ -1,0 +1,71 @@
+global:
+  monitoring:
+    namespace: "default"
+
+
+name: prometheus
+namespace: monitoring
+image: 192.168.0.140:5000/prometheus:v2.11
+serviceName: "prometheus"
+
+volumeType: 'hostPath' # hostPath, pvc
+volumeMountPath: '/prometheus/'
+hostPath:
+  hostPathDir: '/etc/tmp/prometheus' # temporary
+  hostPathType: DirectoryOrCreate
+pvc:
+  storageClassName: rook-ceph-block
+  accessModes: ReadWriteOnce
+  storageSize: 10Gi
+
+service:
+  serviceType: 'ClusterIP' #loadBalancer, externalIP, ClusterIP
+  externalIP:
+    ipAddress: 218.233.172.199
+  ports:
+    webUI:
+      containerPort: 9090
+      port: 19090
+
+config:
+  scrapeInterval: 30s
+  evaluationInterval: 30s
+  serviceDiscovery:
+    nodeExporter:
+      port:
+        source_labels: '[__address__]'
+        regex: '.*:9100$'
+      regex2:
+        source_labels: '[__meta_kubernetes_pod_node_name]'
+        action: 'replace'
+        target_label: 'instance'
+        #action: labelmap
+        #regex: __meta_kubernetes_service_label_(.+)
+      namespace:
+        source_labels: '[__meta_kubernetes_namespace]'
+        regex: 'monitoring'
+
+    jsonExporter:
+      port:
+        source_labels: '[__address__]'
+        regex: '.*:7979$'
+      namespace:
+        source_labels: '[__meta_kubernetes_namespace]'
+        regex: 'voltha'
+
+    kubeStateMetric:
+      port:
+        source_labels: '[__address__]'
+        regex: '.*:8080$'
+      namespace:
+        source_labels: '[__meta_kubernetes_namespace]'
+        regex: 'kube-system'
+
+    KubeletExporter:
+      port:
+        source_labels: '[__address__]'
+        regex: '.*:9859$'
+      namespace:
+        source_labels: '[__meta_kubernetes_namespace]'
+        regex: 'kube-system'
+

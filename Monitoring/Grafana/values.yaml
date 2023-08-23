@@ -1,0 +1,30 @@
+global:
+  monitoring:
+    namespace: default
+
+name: grafana
+namespace: monitoring
+image: 192.168.0.140:5000/grafana:v2.11
+
+env:
+
+volumeType: 'hostPath' # hostPath, pvc
+volumeMountPath: '/var/lib/grafana/data'
+hostPath:
+  hostPathDir: '/etc/tmp/grafana' # temporary
+  hostPathType: DirectoryOrCreate
+pvc:
+  storageClassName: rook-ceph-block
+  accessModes: ReadWriteOnce
+  storageSize: 1Gi
+
+service:
+  serviceType: 'ClusterIP' #loadBalancer, externalIP, ClusterIP
+  externalIP:
+    ipAddress: 218.233.172.199
+  ports:
+    webUI:
+      containerPort: 3000
+      port: 13000
+
+
